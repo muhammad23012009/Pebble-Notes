@@ -1,0 +1,50 @@
+{
+  "name": "Notes+",
+  "author": "TheVancedGamer",
+  "version": "1.0.0",
+  "keywords": ["notes"],
+  "private": true,
+  "dependencies": {},
+  "pebble": {
+    "displayName": "Notes+",
+    "uuid": "4ffd5944-402d-40a6-8ef2-7653168967dd",
+    "sdkVersion": "3",
+    "enableMultiJS": true,
+    "targetPlatforms": [
+      "basalt",
+      "chalk",
+      "diorite"
+    ],
+    "watchapp": {
+      "watchface": false
+    },
+    "messageKeys": [
+      "NOTES_LOAD",
+      "NOTES_STORE"
+    ],
+    "resources": {
+      "media": [
+        {
+          "type": "bitmap",
+          "name": "UP_ICON",
+          "file": "images/action_bar_icon_up.png"
+        },
+        {
+          "type": "bitmap",
+          "name": "DOWN_ICON",
+          "file": "images/action_bar_icon_down.png"
+        },
+        {
+          "type": "bitmap",
+          "name": "DELETE_ICON",
+          "file": "images/action_bar_icon_delete.png"
+        },
+        {
+          "type": "bitmap",
+          "name": "PLUS_ICON",
+          "file": "images/plus_black.png"
+        }
+      ]
+    }
+  }
+}
