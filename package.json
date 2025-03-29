@@ -42,16 +42,6 @@
           "type": "bitmap",
           "name": "DELETE_ICON",
           "file": "images/action_bar_icon_delete.png"
-        },
-        {
-          "type": "bitmap",
-          "name": "PLUS_ICON_BLACK",
-          "file": "images/plus_black.png"
-        },
-        {
-          "type": "bitmap",
-          "name": "PLUS_ICON_WHITE",
-          "file": "images/plus_white.png"
         }
       ]
     }

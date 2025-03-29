@@ -6,9 +6,6 @@ static MenuLayer *s_menu_layer;
 static StatusBarLayer *s_status_bar;
 static NotesAppState *s_state;
 
-static GBitmap *s_add_icon_black;
-static GBitmap *s_add_icon_white;
-
 static void prv_dictation_callback(DictationSession *session, DictationSessionStatus status,
                                   char* transcription, void *context)
 {
@@ -41,17 +38,8 @@ static void prv_menu_draw_row(GContext *ctx, const Layer *cell_layer, MenuIndex 
 
     if (cell_index->row == 0) {
         // This is the "Add note" row
-        GRect box;
-
-        GRect bounds = layer_get_bounds(cell_layer);
-        GBitmap *icon = menu_cell_layer_is_highlighted(cell_layer) ? s_add_icon_white : s_add_icon_black;
-        GRect icon_bounds = gbitmap_get_bounds(icon);
-        box.origin = GPoint((bounds.size.w - icon_bounds.size.w) / 2,
-                            (bounds.size.h - icon_bounds.size.h) / 2);
-        box.size = icon_bounds.size;
-        graphics_context_set_compositing_mode(ctx, GCompOpSet);
-        graphics_draw_bitmap_in_rect(ctx, icon, box);
-        icon = NULL;
+        graphics_draw_text(ctx, "+", fonts_get_system_font(FONT_KEY_GOTHIC_28), layer_get_bounds(cell_layer),
+                           GTextOverflowModeFill, GTextAlignmentCenter, NULL);
         return;
     } else {
         if (cell_index->row == notes_data_get_count(state->notes) + 1) {
@@ -150,13 +138,10 @@ static void prv_window_unload(Window *window) {
 static void prv_init(void) {
     s_window = window_create();
     s_status_bar = status_bar_layer_create();
-    status_bar_layer_set_colors(s_status_bar, GColorClear, GColorClear);
+    status_bar_layer_set_colors(s_status_bar, GColorClear, GColorBlack);
     s_state = malloc(sizeof(NotesAppState));
     s_state->notes = notes_data_create();
     s_state->dictation = dictation_session_create(MAX_NOTE_LENGTH, prv_dictation_callback, s_state);
-
-    s_add_icon_black = gbitmap_create_with_resource(RESOURCE_ID_PLUS_ICON_BLACK);
-    s_add_icon_white = gbitmap_create_with_resource(RESOURCE_ID_PLUS_ICON_WHITE);
 
     //storage_set_num_notes(0);
     //storage_set_num_notes_stored(0);
@@ -179,8 +164,6 @@ static void prv_deinit(void) {
     window_destroy(s_window);
     dictation_session_destroy(s_state->dictation);
     status_bar_layer_destroy(s_status_bar);
-    gbitmap_destroy(s_add_icon_black);
-    gbitmap_destroy(s_add_icon_white);
     notes_data_destroy(s_state->notes);
     free(s_state);
     s_state = NULL;
