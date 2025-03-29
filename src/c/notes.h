@@ -7,9 +7,11 @@
  * hence a note can be 500 characters long at any given point.
 */
 #define MAX_NOTE_LENGTH     500
-#define KEY_NOTES_LENGTH    0xABCD
+#define KEY_NOTES_STORED_LENGTH    0xABCD
+#define KEY_NOTES_LENGTH           0xBEEF
 
 typedef struct __attribute__((packed)) Note {
+    bool text_overflow;
     uint8_t index;
     char* note_text;
     uint16_t note_length;
@@ -25,6 +27,7 @@ typedef struct __attribute__((packed)) NotesData {
 typedef struct __attribute__((packed)) NoteView {
     NotesData *data;
     Note *note;
+    char* alt_text;
 
     Window *window;
     ScrollLayer *scroll_layer;
@@ -38,6 +41,7 @@ typedef struct __attribute__((packed)) NoteView {
 } NoteView;
 
 typedef struct __attribute__((packed)) NotesAppState {
+    bool notes_loaded;
     int appmessage_in_size;
     int appmessage_out_size;
 
@@ -48,13 +52,13 @@ typedef struct __attribute__((packed)) NotesAppState {
 
 typedef void(*NoteCallback)(Note* note);
 
-extern Note* note_create(char *text, int length, int index);
+extern Note* note_create(char *text, int length, time_t time, int index, bool text_overflow);
 
 extern NotesData* notes_data_create();
 extern void notes_data_destroy(NotesData* data);
 
 extern int notes_data_get_count(NotesData *data);
-extern void notes_data_add_note(NotesData *data, char *text);
+extern void notes_data_add_note(NotesData *data, char *text, time_t time, bool text_overflow);
 extern void notes_data_add_full_note(NotesData *data, Note *note);
 extern void notes_data_remove_note(NotesData *data, int index);
 extern Note* notes_data_get_note(NotesData *data, int index);
@@ -72,7 +76,14 @@ extern void note_view_destroy(NoteView *view);
 extern uint32_t storage_get_num_notes();
 extern void storage_set_num_notes(uint32_t num_notes);
 
-extern void storage_store_note_on_watch(Note *note);
+extern uint32_t storage_get_num_notes_stored();
+extern void storage_set_num_notes_stored(uint32_t num_notes);
+
+extern bool storage_store_note_on_watch(Note *note);
 extern void storage_get_notes_from_watch(NotesData *data);
+
+extern void storage_store_note_on_phone(Note *note);
+
+extern void storage_delete_note_from_watch(int index);
 
 #endif // NOTES_H

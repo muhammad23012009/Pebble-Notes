@@ -72,7 +72,23 @@ static void prv_window_load(Window *window)
                               bounds.size.w - ACTION_BAR_WIDTH - PBL_IF_ROUND_ELSE(3, 2), 2000);
 
     view->text_layer = text_layer_create(text_bounds);
-    text_layer_set_text(view->text_layer, view->note->note_text);
+
+    int text_length = strlen(view->note->note_text);
+
+    char overflow_text[] = "...\n\nConnect to your phone to view the remaining note!";
+    int note_length = view->note->note_length + strlen(overflow_text);
+
+    if (view->note->text_overflow) {
+        view->alt_text = malloc(note_length + 1);
+        snprintf(view->alt_text, note_length, "%s%s", view->note->note_text, overflow_text);
+        view->alt_text[note_length] = '\0';
+        APP_LOG(APP_LOG_LEVEL_DEBUG, "Note overflowed! %s, meow %d", view->alt_text, note_length);
+
+        text_layer_set_text(view->text_layer, view->alt_text);
+    } else {
+        text_layer_set_text(view->text_layer, view->note->note_text);
+    }
+    
     text_layer_set_font(view->text_layer, font);
     text_layer_set_overflow_mode(view->text_layer, GTextOverflowModeWordWrap);
     GSize text_size = text_layer_get_content_size(view->text_layer);
@@ -100,6 +116,11 @@ static void prv_window_unload(Window *window)
     gbitmap_destroy(view->up_icon);
     gbitmap_destroy(view->down_icon);
 
+    if (view->alt_text) {
+        free(view->alt_text);
+        view->alt_text = NULL;
+    }
+
     free(view);
     view = NULL;
     window_destroy(window);
@@ -108,6 +129,7 @@ static void prv_window_unload(Window *window)
 NoteView *note_view_create(Note *note, NotesData *data)
 {
     NoteView *view = malloc(sizeof(NoteView));
+    view->alt_text = NULL;
     view->note = note;
     view->data = data;
     view->window = window_create();

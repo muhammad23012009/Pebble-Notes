@@ -13,14 +13,18 @@
     "targetPlatforms": [
       "basalt",
       "chalk",
-      "diorite"
+      "diorite",
+      "emery"
     ],
     "watchapp": {
       "watchface": false
     },
     "messageKeys": [
       "NOTES_LOAD",
-      "NOTES_STORE"
+      "NOTES_STORE_INDEX",
+      "NOTES_STORE_LENGTH",
+      "NOTES_STORE_TIME",
+      "NOTES_STORE_TEXT"
     ],
     "resources": {
       "media": [
@@ -41,8 +45,13 @@
         },
         {
           "type": "bitmap",
-          "name": "PLUS_ICON",
+          "name": "PLUS_ICON_BLACK",
           "file": "images/plus_black.png"
+        },
+        {
+          "type": "bitmap",
+          "name": "PLUS_ICON_WHITE",
+          "file": "images/plus_white.png"
         }
       ]
     }
