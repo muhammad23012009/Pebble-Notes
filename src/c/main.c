@@ -71,7 +71,7 @@ static uint16_t prv_menu_num_rows(struct MenuLayer *menu_layer, uint16_t section
 {
     NotesAppState *state = (NotesAppState*) callback_context;
 
-    if (storage_get_num_notes() > storage_get_num_notes_stored())
+    if (storage_get_num_notes() > storage_get_num_notes_stored() && !app_message_connected())
         return notes_data_get_count(state->notes) + 2;
     else
         return notes_data_get_count(state->notes) + 1;
@@ -84,7 +84,7 @@ static int16_t prv_menu_cell_height(MenuLayer *menu_layer, MenuIndex *index, voi
     if (storage_get_num_notes() > storage_get_num_notes_stored() && 
         index->row == notes_data_get_count(state->notes) + 1)
     {
-        return 74;
+        return 76;
     }
 
     return 44;
@@ -113,7 +113,6 @@ static void prv_window_load(Window *window) {
 static void prv_window_unload(Window *window) {
     menu_layer_destroy(s_menu_layer);
 
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Checking how many notes we have %d %d %d", storage_get_num_notes(), storage_get_num_notes_stored(), notes_data_get_count(s_state->notes));
     // Before destroying all our notes, store them on the watch
     int written_notes = 0;
     for (int i = 0; i < notes_data_get_count(s_state->notes); i++) {
@@ -123,13 +122,11 @@ static void prv_window_unload(Window *window) {
         
         written_notes++;
     }
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Stored notes are now %d", written_notes);
     storage_set_num_notes_stored(written_notes);
 
     // Only change number of notes if we're connected to the phone
-    if (storage_get_num_notes() > storage_get_num_notes_stored()
-        && notes_data_get_count(s_state->notes) == (int)storage_get_num_notes()
-        && true /*!connection_service_peek_pebble_app_connection() */)
+    if (notes_data_get_count(s_state->notes) == (int)storage_get_num_notes()
+        && !connection_service_peek_pebble_app_connection() && !app_message_connected())
         return;
 
     storage_set_num_notes(notes_data_get_count(s_state->notes));
@@ -143,13 +140,10 @@ static void prv_init(void) {
     s_state->notes = notes_data_create();
     s_state->dictation = dictation_session_create(MAX_NOTE_LENGTH, prv_dictation_callback, s_state);
 
-    //storage_set_num_notes(0);
-    //storage_set_num_notes_stored(0);
-    // Load notes from persistent storage
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "initializing app! %d %d", storage_get_num_notes(), storage_get_num_notes_stored());
-    storage_get_notes_from_watch(s_state->notes);
-
     app_message_init(s_state, 512, 512);
+
+    // Load notes from persistent storage
+    storage_get_notes_from_watch(s_state->notes);
 
     window_set_window_handlers(s_window, (WindowHandlers) {
         .load = prv_window_load,

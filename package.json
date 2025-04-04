@@ -20,7 +20,13 @@
       "watchface": false
     },
     "messageKeys": [
+      "READY",
+
       "NOTES_LOAD",
+      "NOTES_LOAD_INDEX",
+      "NOTES_LOAD_TIME",
+      "NOTES_LOAD_TEXT",
+
       "NOTES_STORE_INDEX",
       "NOTES_STORE_LENGTH",
       "NOTES_STORE_TIME",

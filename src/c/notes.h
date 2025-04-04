@@ -53,6 +53,7 @@ typedef struct __attribute__((packed)) NotesAppState {
 typedef void(*NoteCallback)(Note* note);
 
 extern Note* note_create(char *text, int length, time_t time, int index, bool text_overflow);
+extern void note_edit_text(Note *note, const char* text);
 
 extern NotesData* notes_data_create();
 extern void notes_data_destroy(NotesData* data);
@@ -62,11 +63,13 @@ extern void notes_data_add_note(NotesData *data, char *text, time_t time, bool t
 extern void notes_data_add_full_note(NotesData *data, Note *note);
 extern void notes_data_remove_note(NotesData *data, int index);
 extern Note* notes_data_get_note(NotesData *data, int index);
+extern bool notes_data_note_exists(NotesData *data, int index);
 
 extern void notes_data_for_each_note(NotesData *data, NoteCallback callback);
 
 // App Message stuff
 extern void app_message_init(NotesAppState *state, uint32_t in_size, uint32_t out_size);
+extern bool app_message_connected();
 
 // Note views
 extern NoteView *note_view_create(Note *note, NotesData *data);
@@ -83,7 +86,7 @@ extern bool storage_store_note_on_watch(Note *note);
 extern void storage_get_notes_from_watch(NotesData *data);
 
 extern void storage_store_note_on_phone(Note *note);
-
+extern void storage_get_note_from_phone(int index);
 extern void storage_delete_note_from_watch(int index);
 
 #endif // NOTES_H

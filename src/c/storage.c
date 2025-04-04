@@ -60,7 +60,6 @@ bool storage_store_note_on_watch(Note *note)
     if (buffer_size + s_data_size > MAX_STORAGE_SIZE)
         return false;
 
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Heap space before creating buffer was %d", heap_bytes_free());
     uint8_t *buffer = prv_create_buffer(note->index, note_length, note->reminder_time, note->note_text, text_overflow);
 
     int written_bytes = persist_write_data(note->index, buffer, buffer_size);
@@ -72,16 +71,12 @@ bool storage_store_note_on_watch(Note *note)
     free(buffer);
     buffer = NULL;
 
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Heap space after freeing bufer is %d", heap_bytes_free());
-
     return true;
 }
 
 void storage_get_notes_from_watch(NotesData *data)
 {
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Testing! %d", storage_get_num_notes());
     for (uint32_t i = 0; i < storage_get_num_notes_stored(); i++) {
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "Actual size is %d!", persist_get_size(i));
         uint8_t *info = malloc(persist_get_size(i));
         persist_read_data(i, info, persist_get_size(i));
 
@@ -92,7 +87,6 @@ void storage_get_notes_from_watch(NotesData *data)
         memcpy(&reminder_time, info + 3, 4);
         char text[text_length + 1];
         strncpy(text, (const char*)(info + 7), text_length);
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "We managed to read all buffers! %s %d %d", text, index, text_length);
 
         Note* note = note_create(text, text_length, reminder_time, index, text_overflow);
         notes_data_add_full_note(data, note);
@@ -125,5 +119,16 @@ void storage_get_notes_from_phone()
 {
     DictionaryIterator *iter;
     app_message_outbox_begin(&iter);
-    dict_write_uint8(iter, MESSAGE_KEY_NOTES_LOAD, 0);
+    dict_write_int8(iter, MESSAGE_KEY_NOTES_LOAD, -1);
+}
+
+void storage_get_note_from_phone(int index)
+{
+    DictionaryIterator *iter;
+    app_message_outbox_begin(&iter);
+
+    dict_write_int8(iter, MESSAGE_KEY_NOTES_LOAD, index);
+    dict_write_end(iter);
+
+    app_message_outbox_send();
 }
