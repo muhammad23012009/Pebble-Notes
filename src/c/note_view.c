@@ -4,10 +4,12 @@ static void prv_select_handler(ClickRecognizerRef ref, void *context)
 {
     NoteView *view = (NoteView*) context;
     storage_delete_note_from_watch(view->note->index);
+    storage_delete_note_from_phone(view->note->index);
     notes_data_remove_note(view->data, view->note->index);
     window_stack_pop(true);
 }
 
+#if PBL_RECT
 static void prv_scroll_handler(ClickRecognizerRef ref, void *context)
 {
     NoteView *view = (NoteView*) context;
@@ -49,12 +51,13 @@ static void prv_create_action_bar(NoteView *view)
     action_bar_layer_set_icon(view->action_layer, BUTTON_ID_UP, view->up_icon);
     action_bar_layer_set_icon(view->action_layer, BUTTON_ID_DOWN, view->down_icon);
 }
+#endif
 
 static void prv_window_load(Window *window)
 {
     NoteView *view = window_get_user_data(window);
 
-    GFont font = fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
+    GFont font = fonts_get_system_font(PBL_IF_ROUND_ELSE(FONT_KEY_GOTHIC_18_BOLD, FONT_KEY_GOTHIC_24_BOLD));
     Layer *window_layer = window_get_root_layer(window);
     GRect window_bounds = layer_get_bounds(window_layer);
 
@@ -66,10 +69,13 @@ static void prv_window_load(Window *window)
     view->scroll_layer = scroll_layer_create(window_bounds);
     scroll_layer_set_shadow_hidden(view->scroll_layer, true);
     scroll_layer_set_frame(view->scroll_layer, bounds);
+    scroll_layer_set_context(view->scroll_layer, view);
 
-    GRect text_bounds = GRect(PBL_IF_ROUND_ELSE(3, 2),
-                              PBL_IF_ROUND_ELSE(30, 0),
-                              bounds.size.w - ACTION_BAR_WIDTH - PBL_IF_ROUND_ELSE(3, 2), 2000);
+#if PBL_RECT
+    GRect text_bounds = GRect(2, 0, bounds.size.w - ACTION_BAR_WIDTH - 2, 2000);
+#else
+    GRect text_bounds = GRect(0, 0, bounds.size.w, 2000);
+#endif
 
     view->text_layer = text_layer_create(text_bounds);
 
@@ -82,26 +88,32 @@ static void prv_window_load(Window *window)
         view->alt_text = malloc(note_length + 1);
         snprintf(view->alt_text, note_length, "%s%s", view->note->note_text, overflow_text);
         view->alt_text[note_length] = '\0';
-        APP_LOG(APP_LOG_LEVEL_DEBUG, "Note overflowed! %s, meow %d", view->alt_text, note_length);
-
         text_layer_set_text(view->text_layer, view->alt_text);
     } else {
         text_layer_set_text(view->text_layer, view->note->note_text);
     }
     
     text_layer_set_font(view->text_layer, font);
+    text_layer_set_text_alignment(view->text_layer, PBL_IF_ROUND_ELSE(GTextAlignmentCenter, GTextAlignmentLeft));
     text_layer_set_overflow_mode(view->text_layer, GTextOverflowModeWordWrap);
     GSize text_size = text_layer_get_content_size(view->text_layer);
-
-    scroll_layer_set_content_size(view->scroll_layer, GSize(text_size.w, text_size.h + PBL_IF_ROUND_ELSE(90, 30)));
+    scroll_layer_set_content_size(view->scroll_layer, GSize(text_size.w, text_size.h + PBL_IF_ROUND_ELSE(120, 30)));
 
     scroll_layer_add_child(view->scroll_layer, text_layer_get_layer(view->text_layer));
 
-    prv_create_action_bar(view);
-
     layer_add_child(window_layer, scroll_layer_get_layer(view->scroll_layer));
-    action_bar_layer_add_to_window(view->action_layer, window);
     layer_add_child(window_layer, status_bar_layer_get_layer(view->status_layer));
+
+#if PBL_RECT
+    prv_create_action_bar(view);
+    action_bar_layer_add_to_window(view->action_layer, window);
+#endif
+
+#if PBL_ROUND
+    scroll_layer_set_click_config_onto_window(view->scroll_layer, window);
+    text_layer_enable_screen_text_flow_and_paging(view->text_layer, 5);
+    scroll_layer_set_paging(view->scroll_layer, true);
+#endif
 }
 
 static void prv_window_unload(Window *window)
@@ -110,11 +122,13 @@ static void prv_window_unload(Window *window)
     text_layer_destroy(view->text_layer);
     scroll_layer_destroy(view->scroll_layer);
     status_bar_layer_destroy(view->status_layer);
-    action_bar_layer_destroy(view->action_layer);
 
+#if PBL_RECT
+    action_bar_layer_destroy(view->action_layer);
     gbitmap_destroy(view->delete_icon);
     gbitmap_destroy(view->up_icon);
     gbitmap_destroy(view->down_icon);
+#endif
 
     if (view->alt_text) {
         free(view->alt_text);

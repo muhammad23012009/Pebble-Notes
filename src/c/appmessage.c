@@ -3,6 +3,8 @@
 static bool s_connected = false;
 static int s_note_index;
 
+// TODO: subscribe to connection messages
+
 static void prv_app_message_handle_incoming(DictionaryIterator *iter, void *context)
 {
     NotesAppState *state = (NotesAppState*) context;
@@ -41,6 +43,8 @@ static void prv_app_message_handle_incoming(DictionaryIterator *iter, void *cont
             notes_data_add_full_note(state->notes, note);
             note = NULL;
         }
+
+        menu_layer_reload_data(state->menu_layer);
 
         // TODO: do this with a timer to make it async
         if (s_note_index != -1) {

@@ -2,7 +2,7 @@
 #include "notes.h"
 
 #define MAX_STRING_LENGTH   249
-#define MAX_STORAGE_SIZE    4096
+#define MAX_STORAGE_SIZE    4080
 #define BUFFER_SIZE(x)      ((sizeof(uint8_t) * 2) + sizeof(time_t) + sizeof(bool) + x)
 
 uint16_t s_data_size = 0;
@@ -46,6 +46,16 @@ void storage_set_num_notes(uint32_t num_notes)
         return;
     
     persist_write_int(KEY_NOTES_LENGTH, num_notes);
+}
+
+uint32_t storage_get_notes_signature()
+{
+    return persist_read_int(KEY_NOTES_SIGNATURE);
+}
+
+void storage_set_notes_signature(uint32_t signature)
+{
+    persist_write_int(KEY_NOTES_SIGNATURE, signature);
 }
 
 bool storage_store_note_on_watch(Note *note)
@@ -100,6 +110,16 @@ void storage_get_notes_from_watch(NotesData *data)
 void storage_delete_note_from_watch(int index)
 {
     persist_delete(index);
+}
+
+void storage_delete_note_from_phone(int index)
+{
+    DictionaryIterator *iter;
+    app_message_outbox_begin(&iter);
+    dict_write_uint8(iter, MESSAGE_KEY_NOTES_DELETE, index);
+    dict_write_end(iter);
+
+    app_message_outbox_send();
 }
 
 void storage_store_note_on_phone(Note *note)

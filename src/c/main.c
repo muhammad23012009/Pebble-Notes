@@ -2,7 +2,6 @@
 #include "notes.h"
 
 static Window *s_window;
-static MenuLayer *s_menu_layer;
 static StatusBarLayer *s_status_bar;
 static NotesAppState *s_state;
 
@@ -14,7 +13,7 @@ static void prv_dictation_callback(DictationSession *session, DictationSessionSt
     if (status == DictationSessionStatusSuccess) {
         notes_data_add_note(state->notes, transcription, time(NULL), false);
         storage_store_note_on_phone(state->notes->notes[state->notes->count - 1]);
-        menu_layer_reload_data(s_menu_layer);
+        menu_layer_reload_data(state->menu_layer);
     }
 }
 
@@ -26,6 +25,9 @@ static void prv_select_click_handler(MenuLayer *layer, MenuIndex *cell_index, vo
 
     if (cell_index->row == 0) {
         dictation_session_start(state->dictation);
+        //notes_data_add_note(state->notes, "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo. Nullam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibu", time(NULL), false);
+        //storage_store_note_on_phone(state->notes->notes[state->notes->count - 1]);
+        //menu_layer_reload_data(state->menu_layer);
     } else {
         state->note_window = note_view_create(notes_data_get_note(state->notes, cell_index->row - 1), state->notes);
         window_stack_push(state->note_window->window, true);
@@ -96,22 +98,22 @@ static void prv_window_load(Window *window) {
     GRect menu_bounds = layer_get_bounds(status_bar_layer_get_layer(s_status_bar));
 
     GRect bounds = GRect(0, menu_bounds.size.h, window_bounds.size.w, window_bounds.size.h - menu_bounds.size.h);
-    s_menu_layer = menu_layer_create(bounds);
-    menu_layer_set_callbacks(s_menu_layer, s_state, (MenuLayerCallbacks) {
+    s_state->menu_layer = menu_layer_create(bounds);
+    menu_layer_set_callbacks(s_state->menu_layer, s_state, (MenuLayerCallbacks) {
         .draw_row = prv_menu_draw_row,
         .get_num_rows = prv_menu_num_rows,
         .select_click = prv_select_click_handler,
         .get_cell_height = prv_menu_cell_height
     });
-    menu_layer_set_click_config_onto_window(s_menu_layer, window);
-    menu_layer_set_highlight_colors(s_menu_layer, PBL_IF_COLOR_ELSE(GColorBabyBlueEyes, GColorBlack), PBL_IF_COLOR_ELSE(GColorBlack, GColorWhite)); 
+    menu_layer_set_click_config_onto_window(s_state->menu_layer, window);
+    menu_layer_set_highlight_colors(s_state->menu_layer, PBL_IF_COLOR_ELSE(GColorBabyBlueEyes, GColorBlack), PBL_IF_COLOR_ELSE(GColorBlack, GColorWhite)); 
 
-    layer_add_child(window_layer, menu_layer_get_layer(s_menu_layer));
+    layer_add_child(window_layer, menu_layer_get_layer(s_state->menu_layer));
     layer_add_child(window_layer, status_bar_layer_get_layer(s_status_bar));
 }
 
 static void prv_window_unload(Window *window) {
-    menu_layer_destroy(s_menu_layer);
+    menu_layer_destroy(s_state->menu_layer);
 
     // Before destroying all our notes, store them on the watch
     int written_notes = 0;
@@ -124,12 +126,14 @@ static void prv_window_unload(Window *window) {
     }
     storage_set_num_notes_stored(written_notes);
 
+    uint32_t signature = notes_data_signature(s_state->notes);
     // Only change number of notes if we're connected to the phone
-    if (notes_data_get_count(s_state->notes) == (int)storage_get_num_notes()
+    if (signature == storage_get_notes_signature()
         && !connection_service_peek_pebble_app_connection() && !app_message_connected())
         return;
 
     storage_set_num_notes(notes_data_get_count(s_state->notes));
+    storage_set_notes_signature(signature);
 }
 
 static void prv_init(void) {
@@ -140,7 +144,7 @@ static void prv_init(void) {
     s_state->notes = notes_data_create();
     s_state->dictation = dictation_session_create(MAX_NOTE_LENGTH, prv_dictation_callback, s_state);
 
-    app_message_init(s_state, 512, 512);
+    app_message_init(s_state, 560, 560);
 
     // Load notes from persistent storage
     storage_get_notes_from_watch(s_state->notes);

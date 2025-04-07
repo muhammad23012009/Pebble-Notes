@@ -6,9 +6,11 @@
 /* The `Note` struct will be heavily enforced to be exactly 512 bytes at a given point,
  * hence a note can be 500 characters long at any given point.
 */
+// TODO: Add support for dynamic note sizes and note limits according to available heap space
 #define MAX_NOTE_LENGTH     500
 #define KEY_NOTES_STORED_LENGTH    0xABCD
 #define KEY_NOTES_LENGTH           0xBEEF
+#define KEY_NOTES_SIGNATURE        0x1234
 
 typedef struct __attribute__((packed)) Note {
     bool text_overflow;
@@ -32,12 +34,14 @@ typedef struct __attribute__((packed)) NoteView {
     Window *window;
     ScrollLayer *scroll_layer;
     TextLayer *text_layer;
-    ActionBarLayer *action_layer;
     StatusBarLayer *status_layer;
-
+#if PBL_RECT
+    ActionBarLayer *action_layer;
     GBitmap *delete_icon;
     GBitmap *up_icon;
     GBitmap *down_icon;
+#endif
+
 } NoteView;
 
 typedef struct __attribute__((packed)) NotesAppState {
@@ -45,6 +49,7 @@ typedef struct __attribute__((packed)) NotesAppState {
     int appmessage_in_size;
     int appmessage_out_size;
 
+    MenuLayer *menu_layer;
     DictationSession *dictation;
     NotesData *notes;
     NoteView *note_window;
@@ -67,6 +72,8 @@ extern bool notes_data_note_exists(NotesData *data, int index);
 
 extern void notes_data_for_each_note(NotesData *data, NoteCallback callback);
 
+extern uint32_t notes_data_signature(NotesData *data);
+
 // App Message stuff
 extern void app_message_init(NotesAppState *state, uint32_t in_size, uint32_t out_size);
 extern bool app_message_connected();
@@ -88,5 +95,9 @@ extern void storage_get_notes_from_watch(NotesData *data);
 extern void storage_store_note_on_phone(Note *note);
 extern void storage_get_note_from_phone(int index);
 extern void storage_delete_note_from_watch(int index);
+extern void storage_delete_note_from_phone(int index);
+
+extern uint32_t storage_get_notes_signature();
+extern void storage_set_notes_signature(uint32_t signature);
 
 #endif // NOTES_H

@@ -21,6 +21,17 @@ void *prv_realloc(Note** ptr, int size, int index)
     return nptr;
 }
 
+uint32_t prv_hash(const void *buffer, size_t len)
+{
+    const uint8_t* bytes = (const uint8_t*)buffer;
+    uint32_t hash = 2166136261u;
+    for (size_t i = 0; i < len; i++) {
+        hash ^= bytes[i];
+        hash *= 16777619;
+    }
+    return hash;
+}
+
 void notes_data_for_each_note(NotesData *data, NoteCallback callback)
 {
     for (int i = 0; i < data->count; i++) {
@@ -60,6 +71,7 @@ void note_edit_text(Note *note, const char* text)
     note->note_text = realloc(note->note_text, text_length + 1);
     strncpy(note->note_text, text, text_length);
     note->note_text[text_length] = '\0';
+    note->note_length = text_length;
 }
 
 int notes_data_get_count(NotesData *data)
@@ -84,10 +96,14 @@ void notes_data_add_note(NotesData *data, char* text, time_t time, bool text_ove
 
 void notes_data_add_full_note(NotesData *data, Note *note)
 {
-    data->notes = (Note**) realloc(data->notes, (data->count + 1) * sizeof(Note*));
+    bool exists = notes_data_note_exists(data, note->index);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Does the note exist? %d", exists);
+    if (!exists)
+        data->notes = (Note**) realloc(data->notes, (data->count + 1) * sizeof(Note*));
     data->notes[data->count] = note_create(note->note_text, note->note_length, note->reminder_time, note->index, note->text_overflow);
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Note added v2!, testing it: %s, %d, %d", data->notes[data->count]->note_text, data->notes[data->count]->note_length, data->notes[data->count]->index);
-    data->count++;
+    if (!exists)
+        data->count++;
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Testing a note! %s, %d, %d", note->note_text, note->index, note->reminder_time);
 
     prv_destroy_note(note);
 }
@@ -97,7 +113,7 @@ void notes_data_remove_note(NotesData *data, int index)
     if (data->count == 0 || index < 0)
         return;
 
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Destroying a note! %d %d", index, data->count);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Free space before freeing a note was %d", heap_bytes_free());
     int count = data->count;
     Note *note = data->notes[index];
     prv_destroy_note(note);
@@ -110,6 +126,8 @@ void notes_data_remove_note(NotesData *data, int index)
     }
 
     data->count--;
+
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "Free space after freeing a note is %d", heap_bytes_free());
 }
 
 Note *notes_data_get_note(NotesData *data, int index)
@@ -119,7 +137,39 @@ Note *notes_data_get_note(NotesData *data, int index)
 
 bool notes_data_note_exists(NotesData *data, int index)
 {
+    if (index + 1 > data->count)
+        return false;
+
     return data->notes[index] != NULL;
+}
+
+uint32_t notes_data_signature(NotesData *data)
+{
+    // 4 byte signature of the entire NotesData structure
+    // Useful for figuring out if the structure changed
+    uint32_t hash = prv_hash(&data->count, sizeof(data->count));
+
+    for (int i = 0; i < data->count; i++) {
+        Note* note = data->notes[i];
+        if (!note) continue;
+
+        // Hash fixed-size portion before note_text
+        hash ^= prv_hash(note, offsetof(Note, note_text));
+
+        // Hash only first few bytes of note_text
+        if (note->note_text && note->note_length > 0) {
+            size_t sample_len = note->note_length < 4
+                              ? note->note_length
+                              : 4;
+            hash ^= prv_hash(note->note_text, sample_len);
+        }
+
+        // Add length and reminder_time for better uniqueness
+        hash ^= prv_hash(&note->note_length, sizeof(note->note_length));
+        hash ^= prv_hash(&note->reminder_time, sizeof(note->reminder_time));
+    }
+
+    return hash;
 }
 
 NotesData* notes_data_create()
