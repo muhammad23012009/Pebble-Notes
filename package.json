@@ -2,14 +2,22 @@
   "name": "Notes+",
   "author": "TheVancedGamer",
   "version": "1.0.0",
-  "keywords": ["notes"],
+  "keywords": [
+    "notes"
+  ],
   "private": true,
-  "dependencies": {},
+  "dependencies": {
+    "buffer": "^6.0.3",
+    "js-base64": "^3.7.7"
+  },
   "pebble": {
     "displayName": "Notes+",
     "uuid": "4ffd5944-402d-40a6-8ef2-7653168967dd",
     "sdkVersion": "3",
     "enableMultiJS": true,
+    "capabilities": [
+      "configurable"
+    ],
     "targetPlatforms": [
       "basalt",
       "chalk",
@@ -21,16 +29,15 @@
     },
     "messageKeys": [
       "READY",
-
       "NOTES_LOAD",
       "NOTES_LOAD_INDEX",
       "NOTES_LOAD_TIME",
       "NOTES_LOAD_TEXT",
-
       "NOTES_STORE_INDEX",
       "NOTES_STORE_LENGTH",
       "NOTES_STORE_TIME",
-      "NOTES_STORE_TEXT"
+      "NOTES_STORE_TEXT",
+      "NOTES_DELETE"
     ],
     "resources": {
       "media": [
@@ -48,6 +55,11 @@
           "type": "bitmap",
           "name": "DELETE_ICON",
           "file": "images/action_bar_icon_delete.png"
+        },
+        {
+          "type": "bitmap",
+          "name": "BUTTON_INDICATOR",
+          "file": "button_indicator.png"
         }
       ]
     }
