@@ -12,6 +12,10 @@
 #define KEY_NOTES_LENGTH           0xBEEF
 #define KEY_NOTES_SIGNATURE        0x1234
 
+// TODO: do we really need such a big minimum heap space?
+// We keep running out of stack space at this much heap, figure that out too
+#define MIN_HEAP_SPACE      5500
+
 typedef struct __attribute__((packed)) Note {
     bool text_overflow;
     uint8_t index;

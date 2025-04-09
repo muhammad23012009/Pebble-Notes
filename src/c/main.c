@@ -5,6 +5,9 @@ static Window *s_window;
 static StatusBarLayer *s_status_bar;
 static NotesAppState *s_state;
 
+// TODO: somehow minimize the heap_bytes_free() calls we do
+// TODO: only load full note when opened, otherwise only fetch the bare minimum notes for menu layer
+
 static void prv_dictation_callback(DictationSession *session, DictationSessionStatus status,
                                   char* transcription, void *context)
 {
@@ -24,10 +27,11 @@ static void prv_select_click_handler(MenuLayer *layer, MenuIndex *cell_index, vo
         return;
 
     if (cell_index->row == 0) {
+        if (heap_bytes_free() < MIN_HEAP_SPACE) {
+            return;
+        }
         dictation_session_start(state->dictation);
-        //notes_data_add_note(state->notes, "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec pede justo, fringilla vel, aliquet nec, vulputate eget, arcu. In enim justo, rhoncus ut, imperdiet a, venenatis vitae, justo. Nullam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibu", time(NULL), false);
-        //storage_store_note_on_phone(state->notes->notes[state->notes->count - 1]);
-        //menu_layer_reload_data(state->menu_layer);
+
     } else {
         state->note_window = note_view_create(notes_data_get_note(state->notes, cell_index->row - 1), state->notes);
         window_stack_push(state->note_window->window, true);
@@ -39,9 +43,15 @@ static void prv_menu_draw_row(GContext *ctx, const Layer *cell_layer, MenuIndex 
     NotesAppState *state = (NotesAppState*) callback_context;
 
     if (cell_index->row == 0) {
-        // This is the "Add note" row
-        graphics_draw_text(ctx, "+", fonts_get_system_font(FONT_KEY_GOTHIC_28), layer_get_bounds(cell_layer),
-                           GTextOverflowModeFill, GTextAlignmentCenter, NULL);
+        // Figure out if we have enough heap space
+        if (heap_bytes_free() < MIN_HEAP_SPACE) {
+            graphics_draw_text(ctx, "x", fonts_get_system_font(FONT_KEY_GOTHIC_28), layer_get_bounds(cell_layer),
+                               GTextOverflowModeFill, GTextAlignmentCenter, NULL);
+        } else {
+            graphics_draw_text(ctx, "+", fonts_get_system_font(FONT_KEY_GOTHIC_28), layer_get_bounds(cell_layer),
+                               GTextOverflowModeFill, GTextAlignmentCenter, NULL);
+        }
+
         return;
     } else {
         if (cell_index->row == notes_data_get_count(state->notes) + 1) {
@@ -55,16 +65,12 @@ static void prv_menu_draw_row(GContext *ctx, const Layer *cell_layer, MenuIndex 
             struct tm* note_time = localtime(&note->reminder_time);
             //struct tm* current_time = localtime(&current_time_t);
 
-            char text[22 + 1];
-            strncpy(text, note->note_text, 22);
-            text[22] = '\0';
-
             // TODO: Add support for indicating day too
-            char time_string[20];
+            char time_string[6];
             snprintf(time_string, 6, "%02d:%02d", note_time->tm_hour, note_time->tm_min);
 
-            time_string[6] = '\0';
-            menu_cell_basic_draw(ctx, cell_layer, text, time_string, NULL);
+            time_string[5] = '\0';
+            menu_cell_basic_draw(ctx, cell_layer, note->note_text, time_string, NULL);
         }
     }
 }
@@ -129,6 +135,7 @@ static void prv_window_unload(Window *window) {
     uint32_t signature = notes_data_signature(s_state->notes);
     // Only change number of notes if we're connected to the phone
     if (signature == storage_get_notes_signature()
+        && notes_data_get_count(s_state->notes) == (int)storage_get_num_notes()
         && !connection_service_peek_pebble_app_connection() && !app_message_connected())
         return;
 
