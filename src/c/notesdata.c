@@ -98,8 +98,13 @@ void notes_data_add_full_note(NotesData *data, Note *note)
 {
     bool exists = notes_data_note_exists(data, note->index);
     APP_LOG(APP_LOG_LEVEL_DEBUG, "Does the note exist? %d", exists);
-    if (!exists)
-        data->notes = (Note**) realloc(data->notes, (data->count + 1) * sizeof(Note*));
+    if (!exists) {
+        if (!data->notes)
+            data->notes = malloc(sizeof(Note*));
+        else
+            data->notes = (Note**) realloc(data->notes, (data->count + 1) * sizeof(Note*));
+    }
+
     data->notes[data->count] = note_create(note->note_text, note->note_length, note->reminder_time, note->index, note->text_overflow);
     if (!exists)
         data->count++;
@@ -113,8 +118,6 @@ void notes_data_remove_note(NotesData *data, int index)
     if (data->count == 0 || index < 0)
         return;
 
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Free space before freeing a note was %d", heap_bytes_free());
-    int count = data->count;
     Note *note = data->notes[index];
     prv_destroy_note(note);
 
@@ -126,13 +129,11 @@ void notes_data_remove_note(NotesData *data, int index)
     }
 
     data->count--;
-
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Free space after freeing a note is %d", heap_bytes_free());
 }
 
 Note *notes_data_get_note(NotesData *data, int index)
 {
-    return data->notes[index] ? data->notes[index] : NULL;
+    return notes_data_note_exists(data, index) ? data->notes[index] : NULL;
 }
 
 bool notes_data_note_exists(NotesData *data, int index)
