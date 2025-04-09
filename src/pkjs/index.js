@@ -1,3 +1,5 @@
+var Base64 = require('js-base64').Base64;
+
 var appMessageQueue = {
     queue: [],
     numTries: 0,
@@ -40,22 +42,42 @@ var appMessageQueue = {
 
     }
 }
+
+function decrementIndex(index)
+{
+    var count = getCount();
+    if (index < count) {
+        for (var i = index; i < count; i++) {
+            localStorage.setItem(i, localStorage.getItem(i+1));
+        }
+    }
+}
+
+function getCount()
+{
+    var count = localStorage.getItem("count");
+    if (isNaN(count) || count === null)
+        return 0;
+
+    return parseInt(count);
+}
+
 function storeNote(index, time, text)
 {
-    console.log("storing a note!", index, time, text);
-    localStorage.setItem(index, JSON.stringify({
+    var note = JSON.stringify({
         note_text: text,
         note_time: time
-    }));
+    });
+
+    localStorage.setItem("count", getCount() + 1);
+    localStorage.setItem(index, note);
 }
 
 function loadNotes(index)
 {
-    console.log("loadNotes called!", index);
+    var count = getCount();
     var note = localStorage.getItem(index);
-    console.log("note in json is", note);
     var parsed = JSON.parse(note);
-    console.log("Fetched note from local storage", parsed);
 
     var out = {
         NOTES_LOAD: 1,
@@ -67,11 +89,20 @@ function loadNotes(index)
     appMessageQueue.send(out);
 }
 
+function deleteNote(index)
+{
+    var count = getCount();
+    localStorage.removeItem(index);
+    localStorage.getItem(index);
+    decrementIndex(index);
+    if (count != 0)
+        localStorage.setItem("count", count - 1);
+}
+
 Pebble.addEventListener("ready",
     function(e) {
-        console.log("Hello world! - Sent from your javascript application.");
         var out = {
-            READY: 1
+            READY: getCount()
         };
         Pebble.sendAppMessage(out, function(e) {
             console.log("WOHOOO");
@@ -85,8 +116,52 @@ Pebble.addEventListener("appmessage",
     function(e) {
         if (e.payload.NOTES_LOAD != null)
             loadNotes(e.payload.NOTES_LOAD);
+        else if (e.payload.NOTES_DELETE != null)
+            deleteNote(e.payload.NOTES_DELETE);
         else {
             storeNote(e.payload.NOTES_STORE_INDEX, e.payload.NOTES_STORE_TIME, e.payload.NOTES_STORE_TEXT);
         }
     }
 );
+
+Pebble.addEventListener("showConfiguration", function() {
+    var url = "http://pebblenotes.mentallysanemainliners.org/api/notes/push";
+    var data = [];
+
+    for (var i = 0; i < getCount(); i++) {
+        var note = JSON.parse(localStorage.getItem(i));
+        if (note == null)
+            continue;
+
+        var time = note.note_time;
+        var string = note.note_text;
+
+        var data_str = [i, time, string];
+        data.push(data_str);
+    }
+
+    data = Base64.encode(JSON.stringify(data));
+    var xhr = new XMLHttpRequest();
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            var resp = JSON.parse(xhr.response);
+            Pebble.openURL(resp.url);
+        }
+    }
+    xhr.open("POST", url);
+    xhr.send(data);
+});
+
+Pebble.addEventListener("webviewclosed", function(e) {
+    var response = JSON.parse(Base64.decode(e.response));
+    for (var i = 0; i < response.length; i++) {
+        var note = response[i];
+        var notestring = JSON.stringify({
+            note_text: note[2],
+            note_time: note[1]
+        });
+        // TODO: add support for adding notes too
+        localStorage.setItem(note[0], notestring);
+        loadNotes(note[0]);
+    }
+});
