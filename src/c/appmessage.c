@@ -1,6 +1,7 @@
 #include "notes.h"
 
 static bool s_connected = false;
+static int s_expected_notes = 0;
 static int s_note_index;
 
 // TODO: subscribe to connection messages
@@ -12,12 +13,13 @@ static void prv_app_message_handle_incoming(DictionaryIterator *iter, void *cont
     Tuple *ready_tuple = dict_find(iter, MESSAGE_KEY_READY);
     if (ready_tuple) {
         s_connected = true;
+        s_expected_notes = ready_tuple->value->int32;
 
         // TODO: do this with a timer to make it async
         // Begin note refreshing
-        for (int i = 0; i < notes_data_get_count(state->notes); i++) {
+        for (int i = 0; i < s_expected_notes; i++) {
             Note *note = notes_data_get_note(state->notes, i);
-            if (note->text_overflow) {
+            if ((note && note->text_overflow) || !note) {
                 s_note_index = i;
                 s_note_index++;
                 storage_get_note_from_phone(i);
@@ -39,18 +41,15 @@ static void prv_app_message_handle_incoming(DictionaryIterator *iter, void *cont
             note_edit_text(notes_data_get_note(state->notes, index_tuple->value->uint8), string_tuple->value->cstring);
             state->notes->notes[index_tuple->value->uint8]->text_overflow = false;
         } else {
-            Note *note = note_create(string_tuple->value->cstring, string_tuple->length, time_tuple->value->uint32, index_tuple->value->uint8, false);
-            notes_data_add_full_note(state->notes, note);
-            note = NULL;
+            notes_data_add_note(state->notes, string_tuple->value->cstring, time_tuple->value->uint32, false);
+            menu_layer_reload_data(state->menu_layer);
         }
-
-        menu_layer_reload_data(state->menu_layer);
 
         // TODO: do this with a timer to make it async
         if (s_note_index != -1) {
-            for (int i = s_note_index; i < notes_data_get_count(state->notes); i++) {
+            for (int i = s_note_index; i < s_expected_notes; i++) {
                 Note *note = notes_data_get_note(state->notes, i);
-                if (note->text_overflow) {
+                if (!note || (note && note->text_overflow)) {
                     s_note_index = i;
                     s_note_index++;
 
@@ -70,6 +69,13 @@ static void prv_app_message_handle_outgoing(DictionaryIterator *iter, void *cont
 
 static void prv_app_message_handle_outgoing_failed(DictionaryIterator *iter, AppMessageResult status, void *context)
 {
+    Tuple *tuple = dict_read_first(iter);
+    while (tuple != NULL) {
+        if (tuple->key == MESSAGE_KEY_NOTES_LOAD) {
+            storage_get_note_from_phone(tuple->value->uint8);
+        }
+        tuple = dict_read_next(iter);
+    }
 }
 
 void app_message_init(NotesAppState *state, uint32_t in_size, uint32_t out_size)
