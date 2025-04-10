@@ -64,8 +64,10 @@ bool storage_store_note_on_watch(Note *note)
     uint8_t note_length = text_overflow ? MAX_STRING_LENGTH : note->note_length;
     uint16_t buffer_size = BUFFER_SIZE(note_length);
 
-    if (persist_exists(note->index) && persist_get_size(note->index) == buffer_size)
+    if (persist_exists(note->index) && persist_get_size(note->index) == buffer_size) {
+        s_data_size += buffer_size;
         return true;
+    }
 
     if (buffer_size + s_data_size > MAX_STORAGE_SIZE)
         return false;
