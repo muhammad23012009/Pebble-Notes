@@ -75,14 +75,14 @@ bool storage_store_note_on_watch(Note *note)
     uint8_t *buffer = prv_create_buffer(note->index, note_length, note->reminder_time, note->note_text, text_overflow);
 
     int written_bytes = persist_write_data(note->index, buffer, buffer_size);
-    if (written_bytes != buffer_size)
-        return false;
-
-    s_data_size += buffer_size;
-
     free(buffer);
     buffer = NULL;
 
+    if (written_bytes != buffer_size) {
+        return false;
+    }
+
+    s_data_size += buffer_size;
     return true;
 }
 
