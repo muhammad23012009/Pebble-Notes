@@ -103,7 +103,7 @@ static void prv_window_load(Window *window) {
     GRect window_bounds = layer_get_bounds(window_layer);
     GRect menu_bounds = layer_get_bounds(status_bar_layer_get_layer(s_status_bar));
 
-    GRect bounds = GRect(0, menu_bounds.size.h, window_bounds.size.w, window_bounds.size.h - menu_bounds.size.h);
+    GRect bounds = GRect(0, menu_bounds.size.h, window_bounds.size.w, window_bounds.size.h);
     s_state->menu_layer = menu_layer_create(bounds);
     menu_layer_set_callbacks(s_state->menu_layer, s_state, (MenuLayerCallbacks) {
         .draw_row = prv_menu_draw_row,
@@ -112,7 +112,10 @@ static void prv_window_load(Window *window) {
         .get_cell_height = prv_menu_cell_height
     });
     menu_layer_set_click_config_onto_window(s_state->menu_layer, window);
-    menu_layer_set_highlight_colors(s_state->menu_layer, PBL_IF_COLOR_ELSE(GColorBabyBlueEyes, GColorBlack), PBL_IF_COLOR_ELSE(GColorBlack, GColorWhite)); 
+    menu_layer_set_normal_colors(s_state->menu_layer, GColorBlack, GColorWhite);
+    menu_layer_set_highlight_colors(s_state->menu_layer,
+                                    PBL_IF_COLOR_ELSE(GColorTiffanyBlue, GColorWhite),
+                                    GColorBlack); 
 
     layer_add_child(window_layer, menu_layer_get_layer(s_state->menu_layer));
     layer_add_child(window_layer, status_bar_layer_get_layer(s_status_bar));
@@ -146,7 +149,7 @@ static void prv_window_unload(Window *window) {
 static void prv_init(void) {
     s_window = window_create();
     s_status_bar = status_bar_layer_create();
-    status_bar_layer_set_colors(s_status_bar, GColorClear, GColorBlack);
+    status_bar_layer_set_colors(s_status_bar, GColorBlack, GColorWhite);
     s_state = malloc(sizeof(NotesAppState));
     s_state->notes = notes_data_create();
     s_state->dictation = dictation_session_create(MAX_NOTE_LENGTH, prv_dictation_callback, s_state);

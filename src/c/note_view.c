@@ -62,7 +62,7 @@ static void prv_window_load(Window *window)
     GRect window_bounds = layer_get_bounds(window_layer);
 
     view->status_layer = status_bar_layer_create();
-    status_bar_layer_set_colors(view->status_layer, GColorClear, GColorClear);
+    status_bar_layer_set_colors(view->status_layer, GColorBlack, GColorWhite);
     GRect status_bounds = layer_get_bounds(status_bar_layer_get_layer(view->status_layer));
 
     GRect bounds = GRect(0, status_bounds.size.h, window_bounds.size.w, window_bounds.size.h - status_bounds.size.h);
@@ -72,12 +72,14 @@ static void prv_window_load(Window *window)
     scroll_layer_set_context(view->scroll_layer, view);
 
 #if PBL_RECT
-    GRect text_bounds = GRect(2, 0, bounds.size.w - ACTION_BAR_WIDTH - 2, 2000);
+    GRect text_bounds = GRect(0, 0, bounds.size.w - ACTION_BAR_WIDTH, 2000);
 #else
     GRect text_bounds = GRect(0, 0, bounds.size.w, 2000);
 #endif
 
     view->text_layer = text_layer_create(text_bounds);
+    text_layer_set_background_color(view->text_layer, GColorBlack);
+    text_layer_set_text_color(view->text_layer, GColorWhite);
 
     int text_length = strlen(view->note->note_text);
 
