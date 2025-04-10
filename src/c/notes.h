@@ -65,6 +65,7 @@ extern NotesData* notes_data_create();
 extern void notes_data_destroy(NotesData* data);
 
 extern int notes_data_get_count(NotesData *data);
+extern void notes_data_insert_note(NotesData *data, char *text, time_t time, int index);
 extern void notes_data_add_note(NotesData *data, char *text, time_t time, bool text_overflow);
 extern void notes_data_add_full_note(NotesData *data, Note *note);
 extern void notes_data_remove_note(NotesData *data, int index);

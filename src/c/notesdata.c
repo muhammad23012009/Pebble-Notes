@@ -8,6 +8,13 @@ static inline void prv_decrement_index(Note *note)
     }
 }
 
+static inline void prv_increment_index(Note *note)
+{
+    if (note) {
+        note->index++;
+    }
+}
+
 static void *prv_realloc(Note** ptr, int size, int index)
 {
     if (index < size) {
@@ -77,6 +84,20 @@ void note_edit_text(Note *note, const char* text)
 int notes_data_get_count(NotesData *data)
 {
     return data ? data->count : 0;
+}
+
+void notes_data_insert_note(NotesData *data, char *text, time_t time, int index)
+{
+    data->notes = (Note**) realloc(data->notes, (data->count + 1) * sizeof(Note*));
+    data->count++;
+    if (index + 1 <= data->count) {
+        for (int i = data->count - 1; i > index; i--) {
+            data->notes[i] = data->notes[i-1];
+            prv_increment_index(data->notes[i]);
+        }
+    }
+
+    data->notes[index] = note_create(text, strlen(text), time, index, false);
 }
 
 void notes_data_add_note(NotesData *data, char* text, time_t time, bool text_overflow)

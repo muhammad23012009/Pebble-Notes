@@ -8,6 +8,8 @@ static NotesAppState *s_state;
 // TODO: somehow minimize the heap_bytes_free() calls we do
 // TODO: only load full note when opened, otherwise only fetch the bare minimum notes for menu layer
 // TODO: Display a message that tells user to add notes from phone for aplite
+// TODO: Use notes_data_insert_note() when we receive notes from the phone too
+// TODO: add a function for moving two notes
 
 #if PBL_MICROPHONE
 static void prv_dictation_callback(DictationSession *session, DictationSessionStatus status,
@@ -16,7 +18,7 @@ static void prv_dictation_callback(DictationSession *session, DictationSessionSt
     NotesAppState *state = (NotesAppState*) context;
 
     if (status == DictationSessionStatusSuccess) {
-        notes_data_add_note(state->notes, transcription, time(NULL), false);
+        notes_data_insert_note(state->notes, transcription, time(NULL), 0);
         storage_store_note_on_phone(state->notes->notes[state->notes->count - 1]);
         menu_layer_reload_data(state->menu_layer);
     }
