@@ -80,9 +80,6 @@ static void prv_app_message_handle_outgoing_failed(DictionaryIterator *iter, App
 
 void app_message_init(NotesAppState *state, uint32_t in_size, uint32_t out_size)
 {
-    state->appmessage_in_size = in_size;
-    state->appmessage_out_size = out_size;
-
     app_message_register_inbox_received(prv_app_message_handle_incoming);
     app_message_register_outbox_sent(prv_app_message_handle_outgoing);
     app_message_register_outbox_failed(prv_app_message_handle_outgoing_failed);

@@ -16,18 +16,17 @@
 // We keep running out of stack space at this much heap, figure that out too
 #define MIN_HEAP_SPACE      5500
 
-typedef struct __attribute__((packed)) Note {
+typedef struct Note {
+    time_t reminder_time;
+    char *note_text;
+    uint16_t note_length;
     bool text_overflow;
     uint8_t index;
-    char* note_text;
-    uint16_t note_length;
-
-    time_t reminder_time;
 } Note;
 
-typedef struct __attribute__((packed)) NotesData {
-    int count;
+typedef struct NotesData {
     Note** notes;
+    int count;
 } NotesData;
 
 typedef struct __attribute__((packed)) NoteView {
@@ -48,11 +47,7 @@ typedef struct __attribute__((packed)) NoteView {
 
 } NoteView;
 
-typedef struct __attribute__((packed)) NotesAppState {
-    bool notes_loaded;
-    int appmessage_in_size;
-    int appmessage_out_size;
-
+typedef struct NotesAppState {
     MenuLayer *menu_layer;
     DictationSession *dictation;
     NotesData *notes;
@@ -73,8 +68,6 @@ extern void notes_data_add_full_note(NotesData *data, Note *note);
 extern void notes_data_remove_note(NotesData *data, int index);
 extern Note* notes_data_get_note(NotesData *data, int index);
 extern bool notes_data_note_exists(NotesData *data, int index);
-
-extern void notes_data_for_each_note(NotesData *data, NoteCallback callback);
 
 extern uint32_t notes_data_signature(NotesData *data);
 

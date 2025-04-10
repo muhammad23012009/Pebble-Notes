@@ -163,8 +163,7 @@ static void prv_init(void) {
         .load = prv_window_load,
         .unload = prv_window_unload,
     });
-    const bool animated = true;
-    window_stack_push(s_window, animated);
+    window_stack_push(s_window, true);
 }
 
 static void prv_deinit(void) {

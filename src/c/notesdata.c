@@ -1,14 +1,14 @@
 #include <pebble.h>
 #include "notes.h"
 
-void prv_decrement_index(Note *note)
+static inline void prv_decrement_index(Note *note)
 {
     if (note) {
         note->index = (note->index == 0) ? 0 : note->index - 1;
     }
 }
 
-void *prv_realloc(Note** ptr, int size, int index)
+static void *prv_realloc(Note** ptr, int size, int index)
 {
     if (index < size) {
         for (int i = index; i < size; i++) {
@@ -21,7 +21,7 @@ void *prv_realloc(Note** ptr, int size, int index)
     return nptr;
 }
 
-uint32_t prv_hash(const void *buffer, size_t len)
+static uint32_t prv_hash(const void *buffer, size_t len)
 {
     const uint8_t* bytes = (const uint8_t*)buffer;
     uint32_t hash = 2166136261u;
@@ -32,14 +32,14 @@ uint32_t prv_hash(const void *buffer, size_t len)
     return hash;
 }
 
-void notes_data_for_each_note(NotesData *data, NoteCallback callback)
+static inline void prv_for_each_note(NotesData *data, NoteCallback callback)
 {
     for (int i = 0; i < data->count; i++) {
         callback(data->notes[i]);
     }
 }
 
-void prv_destroy_note(Note *note)
+inline static void prv_destroy_note(Note *note)
 {
     free(note->note_text);
     free(note);
@@ -90,14 +90,12 @@ void notes_data_add_note(NotesData *data, char* text, time_t time, bool text_ove
         data->notes = (Note**) realloc(data->notes, (data->count + 1) * sizeof(Note*));
 
     data->notes[data->count] = note_create(text, note_length, time, data->count, text_overflow);
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Note added!, testing it: %s, %d, %d", data->notes[data->count]->note_text, data->notes[data->count]->note_length, data->notes[data->count]->index);
     data->count++;
 }
 
 void notes_data_add_full_note(NotesData *data, Note *note)
 {
     bool exists = notes_data_note_exists(data, note->index);
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Does the note exist? %d", exists);
     if (!exists) {
         if (!data->notes)
             data->notes = malloc(sizeof(Note*));
@@ -108,7 +106,6 @@ void notes_data_add_full_note(NotesData *data, Note *note)
     data->notes[data->count] = note_create(note->note_text, note->note_length, note->reminder_time, note->index, note->text_overflow);
     if (!exists)
         data->count++;
-    APP_LOG(APP_LOG_LEVEL_DEBUG, "Testing a note! %s, %d, %d", note->note_text, note->index, note->reminder_time);
 
     prv_destroy_note(note);
 }
@@ -184,7 +181,7 @@ NotesData* notes_data_create()
 
 void notes_data_destroy(NotesData *data)
 {
-    notes_data_for_each_note(data, prv_destroy_note);
+    prv_for_each_note(data, prv_destroy_note);
     data->count = 0;
     free(data->notes);
     free(data);
