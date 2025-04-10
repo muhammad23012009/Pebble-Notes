@@ -49,7 +49,9 @@ typedef struct __attribute__((packed)) NoteView {
 
 typedef struct NotesAppState {
     MenuLayer *menu_layer;
+#if PBL_MICROPHONE
     DictationSession *dictation;
+#endif
     NotesData *notes;
     NoteView *note_window;
 } NotesAppState;
