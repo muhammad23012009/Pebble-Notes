@@ -92,8 +92,8 @@ function loadNotes(index)
 function deleteNote(index)
 {
     var count = getCount();
+    localStorage.setItem(index, null);
     localStorage.removeItem(index);
-    localStorage.getItem(index);
     decrementIndex(index);
     if (count != 0)
         localStorage.setItem("count", count - 1);
@@ -161,6 +161,9 @@ Pebble.addEventListener("webviewclosed", function(e) {
             note_time: note[1]
         });
         // TODO: add support for adding notes too
+        if (localStorage.getItem(note[0]) == null)
+            localStorage.setItem("count", getCount() + 1);
+
         localStorage.setItem(note[0], notestring);
         loadNotes(note[0]);
     }
